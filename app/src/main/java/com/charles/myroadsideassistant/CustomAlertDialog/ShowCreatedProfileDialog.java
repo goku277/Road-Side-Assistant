@@ -68,9 +68,9 @@ public class ShowCreatedProfileDialog extends AppCompatDialogFragment {
                         // String Specialization= specialization.getText().toString().trim();
                         String Mobile = mobile.getText().toString().trim();
 
-                        //   getGeoCurrentLocation();
+                        //getGeoCurrentLocation();
 
-                        String getHomeAddress = checkLocation.getText().toString().trim();
+                     //   String getHomeAddress = checkLocation.getText().toString().trim();
 
                         listener.applyProfileCreateFields(Name, Mobile, imageUri);
                     }

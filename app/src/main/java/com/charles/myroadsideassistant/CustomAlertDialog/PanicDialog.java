@@ -9,12 +9,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.view.ContextThemeWrapper;
 import androidx.fragment.app.DialogFragment;
 
 import com.charles.myroadsideassistant.R;
@@ -27,6 +29,7 @@ import java.util.Map;
 
 public class PanicDialog extends DialogFragment {
     Spinner spin;
+    Button ok, cancel;
     Map<String, String> map1= new LinkedHashMap<>();
     List<String> stringlist;
     ArrayAdapter<String> arrayadapter;
@@ -38,6 +41,7 @@ public class PanicDialog extends DialogFragment {
     @NonNull
     @Override
     public Dialog onCreateDialog(@Nullable Bundle savedInstanceState) {
+
 
         final String[] spinnerItems = new String[]{
                 "Select helpline number",
@@ -56,35 +60,34 @@ public class PanicDialog extends DialogFragment {
 
         stringlist= new ArrayList<>();
 
-      //  stringlist.add(0, "Select a helpline number");
-
         stringlist= Arrays.asList(spinnerItems);
 
         AlertDialog.Builder profileDialog = new AlertDialog.Builder(getActivity());
         LayoutInflater inflater = getActivity().getLayoutInflater();
         View view = inflater.inflate(R.layout.panic_layout, null);
 
-        profileDialog.setView(view)
-                .setTitle("Panic")
-                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
+        profileDialog.setIcon(R.drawable.index);
 
-                    }
-                })
-                .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialogInterface, int i) {
-                        if (!choose.equals("Select helpline number")) {
-                            listener.applyUpdateContactsFields(map1.get(choose));
-                        }
-                        else Toast.makeText(getActivity(), "Select a helpline number at first", Toast.LENGTH_SHORT).show();
-                    }
-                });
+        profileDialog.setView(view)
+                .setTitle("Panic");
 
         spin= (Spinner) view.findViewById(R.id.call_helpline_id);
 
-        ArrayAdapter<String> adp = new ArrayAdapter<String> (getActivity(), android.R.layout.simple_spinner_dropdown_item,stringlist);
+       // cancel= (Button) view.findViewById(R.id.cancel_id);
+
+        ok= (Button) view.findViewById(R.id.ok_id);
+
+        ok.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (!choose.equals("Select helpline number")) {
+                    listener.applyPanicFields(map1.get(choose));
+                }
+                else Toast.makeText(getActivity(), "Select a helpline number at first", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        ArrayAdapter<String> adp = new ArrayAdapter<String> (getActivity(), R.layout.text, stringlist);
         // APP CURRENTLY CRASHING HERE
         spin.setAdapter(adp);
         //Set listener Called when the item is selected in spinner
@@ -104,8 +107,6 @@ public class PanicDialog extends DialogFragment {
 
         System.out.println("From PanicDialog choose is: " + choose + "\tmobile number is: " + map1.get(choose));
 
-      //  newContactNumber = (EditText) view.findViewById(R.id.new_contact_number_id);
-     //   oldName = (EditText) view.findViewById(R.id.old_contact_name_id);
         return profileDialog.create();
     }
 
@@ -122,6 +123,6 @@ public class PanicDialog extends DialogFragment {
     }
 
     public interface ContactsUpdateDialogListener {
-        public void applyUpdateContactsFields(String number1);
+        public void applyPanicFields(String number1);
     }
 }

@@ -8,25 +8,40 @@
     android:layout_height="match_parent"
     tools:context=".Components.MainActivity">
 
-    <ScrollView
+    <LinearLayout
+        android:id="@+id/linear_id"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="150dp"
+        android:background="#03A9F4"
+        android:orientation="vertical"
+        app:layout_constraintTop_toTopOf="parent" >
+
+    </LinearLayout>
+
+    <ScrollView
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:foregroundGravity="center_horizontal"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/linear_id">
 
         <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:layout_gravity="center_horizontal"
+            android:padding="5dp">
 
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardView"
-                android:layout_width="121dp"
-                android:layout_height="119dp"
-                android:layout_marginTop="44dp"
+                android:layout_width="165dp"
+                android:layout_height="126dp"
+                android:layout_marginLeft="4dp"
                 android:elevation="4dp"
                 app:cardCornerRadius="5dp"
-                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintEnd_toStartOf="@+id/guideline"
                 app:layout_constraintHorizontal_bias="0.162"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent">
+                app:layout_constraintTop_toBottomOf="@+id/empty_id">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
                     android:layout_width="match_parent"
@@ -34,8 +49,8 @@
 
                     <ImageView
                         android:id="@+id/user_img_id"
-                        android:layout_width="121dp"
-                        android:layout_height="75dp"
+                        android:layout_width="match_parent"
+                        android:layout_height="82dp"
                         android:layout_marginTop="8dp"
                         android:src="@drawable/user"
                         app:layout_constraintStart_toStartOf="parent"
@@ -59,12 +74,12 @@
 
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardView2"
-                android:layout_width="121dp"
-                android:layout_height="119dp"
+                android:layout_width="165dp"
+                android:layout_height="126dp"
                 android:elevation="4dp"
                 app:cardCornerRadius="5dp"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@+id/cardView"
+                app:layout_constraintStart_toStartOf="@+id/guideline"
                 app:layout_constraintTop_toTopOf="@+id/cardView">
 
                 <androidx.constraintlayout.widget.ConstraintLayout
@@ -73,8 +88,8 @@
 
                     <ImageView
                         android:id="@+id/emmergency_img_id"
-                        android:layout_width="119dp"
-                        android:layout_height="67dp"
+                        android:layout_width="match_parent"
+                        android:layout_height="74dp"
                         android:layout_marginTop="16dp"
                         android:src="@drawable/emmergency"
                         app:layout_constraintStart_toStartOf="parent"
@@ -100,8 +115,8 @@
 
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardView3"
-                android:layout_width="121dp"
-                android:layout_height="119dp"
+                android:layout_width="165dp"
+                android:layout_height="126dp"
                 android:layout_marginTop="40dp"
                 android:elevation="4dp"
                 app:cardCornerRadius="5dp"
@@ -116,8 +131,8 @@
 
                     <ImageView
                         android:id="@+id/update_img_id"
-                        android:layout_width="119dp"
-                        android:layout_height="71dp"
+                        android:layout_width="match_parent"
+                        android:layout_height="69dp"
                         android:layout_marginTop="16dp"
                         android:src="@drawable/update"
                         app:layout_constraintStart_toStartOf="parent"
@@ -142,8 +157,8 @@
 
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardView4"
-                android:layout_width="121dp"
-                android:layout_height="119dp"
+                android:layout_width="165dp"
+                android:layout_height="126dp"
                 android:elevation="4dp"
                 app:cardCornerRadius="5dp"
                 app:layout_constraintEnd_toEndOf="@+id/cardView2"
@@ -156,25 +171,25 @@
                     android:layout_height="match_parent">
 
                     <ImageView
-                        android:id="@+id/delete_img_id"
-                        android:layout_width="112dp"
-                        android:layout_height="67dp"
+                        android:id="@+id/share_location_id"
+                        android:layout_width="match_parent"
+                        android:layout_height="71dp"
                         android:layout_marginTop="16dp"
-                        android:src="@drawable/stop"
+                        android:src="@drawable/blue_icon"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintHorizontal_bias="0.454"
                         app:layout_constraintStart_toStartOf="parent"
                         app:layout_constraintTop_toTopOf="parent" />
 
                     <TextView
-                        android:id="@+id/delete_text_id"
+                        android:id="@+id/share_location_text_id"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="8dp"
-                        android:text="Stop Location"
+                        android:text="Share Location"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/delete_img_id" />
+                        app:layout_constraintTop_toBottomOf="@+id/share_location_id" />
 
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
@@ -184,8 +199,8 @@
 
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardView5"
-                android:layout_width="121dp"
-                android:layout_height="119dp"
+                android:layout_width="165dp"
+                android:layout_height="126dp"
                 android:layout_marginTop="32dp"
                 android:elevation="4dp"
                 app:cardCornerRadius="5dp"
@@ -205,7 +220,7 @@
                         android:layout_marginTop="16dp"
                         android:src="@drawable/contacts_ic"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toTopOf="parent"/>
+                        app:layout_constraintTop_toTopOf="parent" />
 
                     <TextView
                         android:id="@+id/take_contacts_from_phonebook_text_id"
@@ -224,8 +239,8 @@
 
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardView6"
-                android:layout_width="121dp"
-                android:layout_height="119dp"
+                android:layout_width="165dp"
+                android:layout_height="126dp"
                 android:elevation="4dp"
                 app:cardCornerRadius="5dp"
                 app:layout_constraintEnd_toEndOf="@+id/cardView4"
@@ -239,8 +254,8 @@
 
                     <ImageView
                         android:id="@+id/check_contacts"
-                        android:layout_width="120dp"
-                        android:layout_height="59dp"
+                        android:layout_width="match_parent"
+                        android:layout_height="69dp"
                         android:layout_marginTop="16dp"
                         android:src="@drawable/contacts_ic"
                         app:layout_constraintEnd_toEndOf="parent"
@@ -265,11 +280,11 @@
 
             <androidx.cardview.widget.CardView
                 android:id="@+id/cardView7"
-                android:layout_width="121dp"
-                android:layout_height="119dp"
+                android:layout_width="165dp"
+                android:layout_height="126dp"
                 android:layout_marginTop="32dp"
-                android:elevation="4dp"
                 android:layout_marginBottom="11dp"
+                android:elevation="4dp"
                 app:cardCornerRadius="5dp"
                 app:layout_constraintEnd_toEndOf="@+id/cardView5"
                 app:layout_constraintStart_toStartOf="@+id/cardView5"
@@ -281,8 +296,8 @@
 
                     <ImageView
                         android:id="@+id/online_etertainment_img_id"
-                        android:layout_width="115dp"
-                        android:layout_height="57dp"
+                        android:layout_width="match_parent"
+                        android:layout_height="74dp"
                         android:layout_marginTop="16dp"
                         android:src="@drawable/web_ic"
                         app:layout_constraintEnd_toEndOf="parent"
@@ -293,12 +308,12 @@
                         android:id="@+id/online_entertainment_text_id"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="View News and Weather Report"
+                        android:gravity="center_horizontal"
+                        android:text="View News"
                         android:textAlignment="center"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/online_etertainment_img_id"
-                        android:gravity="center_horizontal" />
+                        app:layout_constraintTop_toBottomOf="@+id/online_etertainment_img_id" />
 
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
@@ -307,11 +322,12 @@
             </androidx.cardview.widget.CardView>
 
             <androidx.cardview.widget.CardView
-                android:layout_width="121dp"
-                android:layout_height="119dp"
-                app:cardCornerRadius="5dp"
-                android:elevation="4dp"
+                android:id="@+id/cv_11"
+                android:layout_width="165dp"
+                android:layout_height="126dp"
                 android:layout_marginBottom="11dp"
+                android:elevation="4dp"
+                app:cardCornerRadius="5dp"
                 app:layout_constraintEnd_toEndOf="@+id/cardView6"
                 app:layout_constraintStart_toStartOf="@+id/cardView6"
                 app:layout_constraintTop_toTopOf="@+id/cardView7">
@@ -334,12 +350,12 @@
                         android:id="@+id/check_nearby_places_text_id"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
+                        android:gravity="center_horizontal"
                         android:text="Check Nearby Places"
                         android:textAlignment="center"
                         app:layout_constraintEnd_toEndOf="parent"
                         app:layout_constraintStart_toStartOf="parent"
-                        app:layout_constraintTop_toBottomOf="@+id/check_nearby_places_img_id"
-                        android:gravity="center_horizontal" />
+                        app:layout_constraintTop_toBottomOf="@+id/check_nearby_places_img_id" />
 
 
                 </androidx.constraintlayout.widget.ConstraintLayout>
@@ -347,6 +363,104 @@
 
             </androidx.cardview.widget.CardView>
 
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardView8"
+                android:layout_width="165dp"
+                android:layout_height="126dp"
+                android:layout_marginTop="32dp"
+                android:elevation="4dp"
+                app:cardCornerRadius="5dp"
+                app:layout_constraintEnd_toEndOf="@+id/cardView6"
+                app:layout_constraintStart_toStartOf="@+id/cardView6"
+                app:layout_constraintTop_toBottomOf="@+id/cv_11">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:layout_gravity="center">
+
+                    <ImageView
+                        android:id="@+id/weather_status_id"
+                        android:layout_width="163dp"
+                        android:layout_height="82dp"
+                        android:layout_marginTop="16dp"
+                        android:src="@drawable/weathericon"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintTop_toTopOf="parent" />
+
+                    <TextView
+                        android:id="@+id/weather_text_status_id"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_horizontal"
+                        android:text="Weather"
+                        android:textAlignment="center"
+                        app:layout_constraintTop_toBottomOf="@+id/weather_status_id"
+                        tools:layout_editor_absoluteX="-2dp" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+            </androidx.cardview.widget.CardView>
+
+            <androidx.cardview.widget.CardView
+                android:id="@+id/cardView9"
+                android:layout_width="165dp"
+                android:layout_height="126dp"
+                android:elevation="4dp"
+                app:cardCornerRadius="5dp"
+                app:layout_constraintEnd_toEndOf="@+id/cardView7"
+                app:layout_constraintStart_toStartOf="@+id/cardView7"
+                app:layout_constraintTop_toTopOf="@+id/cardView8">
+
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent">
+
+                    <ImageView
+                        android:id="@+id/send_location_id"
+                        android:layout_width="match_parent"
+                        android:layout_height="81dp"
+                        android:layout_marginTop="20dp"
+                        android:src="@drawable/blue_icon"
+                        app:layout_constraintTop_toTopOf="parent"
+                        tools:layout_editor_absoluteX="-1dp" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/send_location_text_id"
+                        android:textAlignment="center"
+                        android:text="Send Location"
+                        app:layout_constraintTop_toBottomOf="@+id/send_location_id"
+                        android:gravity="center_horizontal" />
+
+                </androidx.constraintlayout.widget.ConstraintLayout>
+
+            </androidx.cardview.widget.CardView>
+
+            <TextView
+                android:id="@+id/bottom_empty_text_view_id"
+                android:layout_width="match_parent"
+                android:layout_height="12dp"
+                app:layout_constraintTop_toBottomOf="@+id/cardView9"
+                tools:layout_editor_absoluteX="5dp" />
+
+            <androidx.constraintlayout.widget.Guideline
+                android:id="@+id/guideline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                app:layout_constraintGuide_begin="177dp" />
+
+            <TextView
+                android:id="@+id/empty_id"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:layout_marginStart="12dp"
+                android:layout_marginLeft="12dp"
+                android:layout_marginTop="92dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent"></TextView>
 
         </androidx.constraintlayout.widget.ConstraintLayout>
 

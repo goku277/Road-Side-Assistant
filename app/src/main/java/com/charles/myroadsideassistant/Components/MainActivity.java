@@ -8,11 +8,16 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import android.Manifest;
+import android.app.Activity;
 import android.app.ActivityManager;
+import android.app.PendingIntent;
 import android.app.ProgressDialog;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -20,7 +25,9 @@ import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Looper;
 import android.provider.ContactsContract;
+import android.telephony.SmsManager;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -28,6 +35,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
 import com.charles.myroadsideassistant.Credentials.Signin;
 import com.charles.myroadsideassistant.CustomAlertDialog.ContactsUpdateDialog;
 import com.charles.myroadsideassistant.CustomAlertDialog.PanicDialog;
@@ -40,6 +48,10 @@ import com.charles.myroadsideassistant.GoogleMap.NearbyPlacesOfCurrentLocation;
 import com.charles.myroadsideassistant.R;
 import com.charles.myroadsideassistant.Service.Constants;
 import com.charles.myroadsideassistant.Service.LocationService;
+import com.google.android.gms.location.LocationCallback;
+import com.google.android.gms.location.LocationRequest;
+import com.google.android.gms.location.LocationResult;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.UiSettings;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -50,15 +62,20 @@ import com.google.firebase.storage.OnProgressListener;
 import com.google.firebase.storage.StorageReference;
 import com.google.firebase.storage.UploadTask;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.UUID;
-public class MainActivity extends AppCompatActivity implements View.OnClickListener, ProfileDialog.ProfileCreateListener, ShowCreatedProfileDialog.ShowProfileCreateListener, ContactsUpdateDialog.ContactsUpdateDialogListener, PanicDialog.ContactsUpdateDialogListener, PlaceChooserDialog.ContactsUpdateDialogListener {
 
-    ImageView setProfileImg, emergencyImg, updateProfileImg, deleteProfileImg, onlineentertainment_img, checkNearbyPlaces;
+import de.hdodenhof.circleimageview.CircleImageView;
 
-    TextView setProfile, emergency, updateProfile, deleteProfile, onlineentertainment_text, checkNearbyPlaces_text;
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, ProfileDialog.ProfileCreateListener, ShowCreatedProfileDialog.ShowProfileCreateListener, PanicDialog.ContactsUpdateDialogListener, PlaceChooserDialog.placechooseListener, ContactsUpdateDialog.ContactsUpdateDialogListener {
+
+    ImageView setProfileImg, emergencyImg, updateProfileImg, deleteProfileImg, onlineentertainment_img, checkNearbyPlaces, send_location_img, weather_img;
+
+    TextView setProfile, emergency, updateProfile, deleteProfile, onlineentertainment_text, checkNearbyPlaces_text, send_location_text, weather_text;
 
     private static final int PROXIMITY_RADIUS = 25;
     private static final String TAG = "MainActivity";
@@ -75,6 +92,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     Profile pf;
 
     ContactsDb cdb;
+
+    double latitude=0, longitude=0;
 
     private static final int CONTACT_PERMISSION_CODE= 1;
     private static final int CONTACT_PICK_CODE= 2;
@@ -103,16 +122,33 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     String concatNumber="", contactName="";
 
+    private static final String SMS_SEND_ACTION = "CTS_SMS_SEND_ACTION";
+    private static final String SMS_DELIVERY_ACTION = "CTS_SMS_DELIVERY_ACTION";
+
+    public String imagePath="";
+
+    CircleImageView profileImg;
+
+    ImageView sharelocation, weatherimg;
+
+    TextView sharelocationtext, weathertext;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+      //  requestPermission();
+
+        requestSmsPermission();
+
         requestPermission();
 
-        mp= new MediaPlayer();
+      //  if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_CONTACTS)!= PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_CONTACTS)!= PackageManager.PERMISSION_GRANTED) {
+      //      requestContactPermission();
+      //  }
 
-        mp= MediaPlayer.create(this, R.raw.alarm_sound);
+        getGeoCurrentLocation();
 
         storage= FirebaseStorage.getInstance();
         storageReference= storage.getReference();
@@ -125,6 +161,30 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         ContactName= new ArrayList<>();
         ContactsSet= new LinkedHashSet<>();
 
+     //  weatherimg= (ImageView) findViewById(R.id.weather_status_id);
+     //   weathertext= (TextView) findViewById(R.id.weather_text_status_id);
+
+    //    weatherimg.setOnClickListener(this);
+   //     weathertext.setOnClickListener(this);
+
+        send_location_img= (ImageView) findViewById(R.id.send_location_id);
+        send_location_text= (TextView) findViewById(R.id.share_location_text_id);
+
+        send_location_img.setOnClickListener(this);
+        send_location_text.setOnClickListener(this);
+
+        weather_img= (ImageView) findViewById(R.id.weather_status_id);
+        weather_text= (TextView) findViewById(R.id.weather_text_status_id);
+
+        weather_img.setOnClickListener(this);
+        weather_text.setOnClickListener(this);
+
+        sharelocation= (ImageView) findViewById(R.id.share_location_id);
+        sharelocationtext= (TextView) findViewById(R.id.share_location_text_id);
+
+        sharelocation.setOnClickListener(this);
+        sharelocationtext.setOnClickListener(this);
+
         setProfile= (TextView) findViewById(R.id.user_text_id);
         setProfileImg= (ImageView) findViewById(R.id.user_img_id);
 
@@ -134,8 +194,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         updateProfileImg= (ImageView) findViewById(R.id.update_img_id);
         updateProfile= (TextView) findViewById(R.id.updateprofile_text_id);
 
-        deleteProfile= (TextView) findViewById(R.id.delete_text_id);
-        deleteProfileImg= (ImageView) findViewById(R.id.delete_img_id);
+      //  deleteProfile= (TextView) findViewById(R.id.delete_text_id);
+      //  deleteProfileImg= (ImageView) findViewById(R.id.delete_img_id);
 
         create_ten_contacts_img= (ImageView) findViewById(R.id.take_contacts_from_phone_book_img_id);
         create_ten_contacts_text= (TextView) findViewById(R.id.take_contacts_from_phonebook_text_id);
@@ -161,8 +221,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         updateProfile.setOnClickListener(this);
         updateProfileImg.setOnClickListener(this);
 
-        deleteProfile.setOnClickListener(this);
-        deleteProfileImg.setOnClickListener(this);
+    //    deleteProfile.setOnClickListener(this);
+    //    deleteProfileImg.setOnClickListener(this);
 
         create_ten_contacts_img.setOnClickListener(this);
         create_ten_contacts_text.setOnClickListener(this);
@@ -183,12 +243,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.user_img_id:
                 profileAlert();
                 break;
-            case R.id.emmergency_text_id:
-                play();
+            case R.id.emmergency_img_id:
                 panic();
                 break;
-            case R.id.emmergency_img_id:
-                play();
+            case R.id.emmergency_text_id:
                 panic();
                 break;
             case R.id.updateprofile_text_id:
@@ -197,12 +255,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.update_img_id:
                 updateMembers();
                 break;
-            case R.id.delete_img_id:
-                stopLocationService();
-                break;
-            case R.id.delete_text_id:
-                stopLocationService();
-                break;
+         //   case R.id.delete_img_id:
+              //  stopLocationService();
+            //    break;
+        //    case R.id.delete_text_id:
+             //   stopLocationService();
+       //         break;
             case R.id.take_contacts_from_phone_book_img_id:
                 inputTenContacts();
                 displayStoredContactsAndUpload();
@@ -229,6 +287,186 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.check_nearby_places_text_id:
                 checkNearbyPlaces();
                 break;
+            case R.id.share_location_id:
+                requestPermission();
+                getGeoCurrentLocation();
+                whatsApp();
+                break;
+            case R.id.share_location_text_id:
+                requestPermission();
+                getGeoCurrentLocation();
+                whatsApp();
+                break;
+            case R.id.weather_status_id:
+                getWeather();
+                break;
+            case R.id.weather_text_status_id:
+                getWeather();
+                break;
+            case R.id.send_location_id:
+                sendCurrentLocationViaMessage();
+                break;
+            case R.id.send_location_text_id:
+                sendCurrentLocationViaMessage();
+                break;
+        }
+    }
+
+    private void sendCurrentLocationViaMessage() {
+        Set<String> contactnumber= new LinkedHashSet<>();
+        SQLiteDatabase db = cdb.getWritableDatabase();
+        String query = "select * from contact";
+        Cursor c1 = db.rawQuery(query, null);
+        if (c1 != null && c1.getCount() > 0) {
+            if (c1.moveToFirst()) {
+                do {
+                    if (!contactnumber.contains(c1.getString(1))) {
+                        contactnumber.add(c1.getString(1));
+                    }
+                } while (c1.moveToNext());
+            }
+        }
+
+        for (String s: contactnumber) {
+            SmsManager sm = SmsManager.getDefault();
+
+            IntentFilter sendIntentFilter = new IntentFilter(SMS_SEND_ACTION);
+            IntentFilter receiveIntentFilter = new IntentFilter(SMS_DELIVERY_ACTION);
+
+            PendingIntent sentPI = PendingIntent.getBroadcast(MainActivity.this, 0, new Intent(SMS_SEND_ACTION), 0);
+            PendingIntent deliveredPI = PendingIntent.getBroadcast(MainActivity.this, 0, new Intent(SMS_DELIVERY_ACTION), 0);
+
+            BroadcastReceiver messageSentReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    switch (getResultCode()) {
+                        case Activity.RESULT_OK:
+                            Toast.makeText(context, "SMS sent", Toast.LENGTH_SHORT).show();
+                            break;
+                        case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
+                            Toast.makeText(context, "Generic failure", Toast.LENGTH_SHORT).show();
+                            break;
+                        case SmsManager.RESULT_ERROR_NO_SERVICE:
+                            Toast.makeText(context, "No service", Toast.LENGTH_SHORT).show();
+                            break;
+                        case SmsManager.RESULT_ERROR_NULL_PDU:
+                            Toast.makeText(context, "Null PDU", Toast.LENGTH_SHORT).show();
+                            break;
+                        case SmsManager.RESULT_ERROR_RADIO_OFF:
+                            Toast.makeText(context, "Radio off", Toast.LENGTH_SHORT).show();
+                            break;
+                    }
+                }
+            };
+
+            try {
+
+                registerReceiver(messageSentReceiver, sendIntentFilter);
+
+                BroadcastReceiver messageReceiveReceiver = new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context arg0, Intent arg1) {
+                        switch (getResultCode()) {
+                            case Activity.RESULT_OK:
+                                Toast.makeText(MainActivity.this, "SMS Delivered", Toast.LENGTH_SHORT).show();
+                                break;
+                            case Activity.RESULT_CANCELED:
+                                Toast.makeText(MainActivity.this, "SMS Not Delivered", Toast.LENGTH_SHORT).show();
+                                break;
+                        }
+                    }
+                };
+                registerReceiver(messageReceiveReceiver, receiveIntentFilter);
+                String message1 = "Hi this is an emergency situation here with me panic! panic! panic!, please come and save me. My current location is: " + "https://www.google.com/maps/search/" +latitude + "," + longitude;
+                ArrayList<String> parts = sm.divideMessage(message1);
+                ArrayList<PendingIntent> sentIntents = new ArrayList<PendingIntent>();
+                ArrayList<PendingIntent> deliveryIntents = new ArrayList<PendingIntent>();
+                for (int i = 0; i < parts.size(); i++) {
+                    sentIntents.add(PendingIntent.getBroadcast(MainActivity.this, 0, new Intent(SMS_SEND_ACTION), 0));
+                    deliveryIntents.add(PendingIntent.getBroadcast(MainActivity.this, 0, new Intent(SMS_DELIVERY_ACTION), 0));
+                }
+                sm.sendMultipartTextMessage(s, null, parts, sentIntents, deliveryIntents);
+            } catch (Exception e) {
+            }
+        }
+    }
+
+    private void getWeather() {
+        startActivity(new Intent(getApplicationContext(), Weather.class));
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        requestPermission();
+        requestSmsPermission();
+    }
+
+    private void whatsApp() {
+        if (latitude==0.0 && longitude==0.0) {
+            requestPermission();
+            getGeoCurrentLocation();
+
+            AlertDialog.Builder a11= new AlertDialog.Builder(MainActivity.this);
+            a11.setTitle("Alert");
+            a11.setMessage("Please wait for the app to fetch your current location as soon as your currnent latitude and longitude is displayed then try once again and please keep your device data ON");
+            a11.setCancelable(true);
+            AlertDialog a1= a11.create();
+            a1.show();
+
+          /*  if (latitude!=0.0 && longitude!=0.0) {
+                ArrayList<String> phNo = new ArrayList<>();
+                SQLiteDatabase db = cdb.getWritableDatabase();
+                String query = "select * from contact";
+                Cursor c1 = db.rawQuery(query, null);
+                if (c1 != null && c1.getCount() > 0) {
+                    if (c1.moveToFirst()) {
+                        do {
+                            if (!phNo.contains(c1.getString(1))) {
+                                phNo.add(c1.getString(1));
+                            }
+                        } while (c1.moveToNext());
+                    }
+                }
+
+                String message = "Get my current location:\n" + "http://maps.google.com/maps?saddr=" + latitude + "," + longitude;
+                //  String url="";
+                for (String s : phNo) {
+                    Intent sendIntent = new Intent();
+                    sendIntent.setAction(Intent.ACTION_VIEW);
+                    String url = "https://api.whatsapp.com/send?phone=" + s + "&text=" + message;
+                    sendIntent.setData(Uri.parse(url));
+                    startActivity(sendIntent);
+                }
+            }  */
+        }
+
+        else if (latitude!=0.0 && longitude!=0.0) {
+            ArrayList<String> phNo = new ArrayList<>();
+            SQLiteDatabase db = cdb.getWritableDatabase();
+            String query = "select * from contact";
+            Cursor c1 = db.rawQuery(query, null);
+            if (c1 != null && c1.getCount() > 0) {
+                if (c1.moveToFirst()) {
+                    do {
+                        if (!phNo.contains(c1.getString(1))) {
+                            phNo.add(c1.getString(1));
+                        }
+                    } while (c1.moveToNext());
+                }
+            }
+
+            String message = "Get my current location:\n" + "https://www.google.com/maps/search/" +latitude + "," + longitude;
+            //  String url="";
+            for (String s : phNo) {
+                s= "+91 "+s;
+                System.out.println("From MainActivity whatsApp() phNo: " + s);
+                Intent sendIntent = new Intent();
+                sendIntent.setAction(Intent.ACTION_VIEW);
+                String url = "https://api.whatsapp.com/send?phone=" + s + "&text=" + message;
+                sendIntent.setData(Uri.parse(url));
+                startActivity(sendIntent);
+            }
         }
     }
 
@@ -259,13 +497,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private void onlineEntertainmentAlert() {
         AlertDialog.Builder a11= new AlertDialog.Builder(MainActivity.this);
         a11.setTitle("Online Entertainment");
-        a11.setMessage("Choose among live weather forecasting and live news updates\n\nChoose your option");
-        a11.setPositiveButton("Live Weather", new DialogInterface.OnClickListener() {
+        a11.setMessage("Check daily live news updates and headlines, articles by clicking on this option");
+      /*  a11.setPositiveButton("Live Weather", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
                 startActivity(new Intent(getApplicationContext(), Weather.class));
             }
-        });
+        });   */
         a11.setNegativeButton("Live News", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
@@ -312,19 +550,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         cud.show(getSupportFragmentManager(), "Update Contacts");
     }
 
-    private void play() {
-        if (mp== null) {
-         //   mp= MediaPlayer.create(this, R.raw.alarm_sound);
-         //   mp.setOnCompletionListener(new MediaPlayer.OnCompletionListener() {
-           //     @Override
-          //      public void onCompletion(MediaPlayer mp) {
-          //          play();
-          //      }
-         //   });
-        }
-       // mp.start();
-    }
-
     private void profileAlert() {
         AlertDialog.Builder a11= new AlertDialog.Builder(MainActivity.this);
         a11.setTitle("Profile Section");
@@ -343,12 +568,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
 
-        a11.setNeutralButton("Update profile", new DialogInterface.OnClickListener() {
+     /*   a11.setNeutralButton("Update profile", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
 
             }
-        });
+        });    */
 
         AlertDialog a1= a11.create();
         a1.show();
@@ -356,10 +581,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void checkProfile() {
         SQLiteDatabase db= pf.getWritableDatabase();
-
         String query = "select * from profile";
         Cursor c1 = db.rawQuery(query, null);
-
         if (c1.getCount() == 0) {
             Toast.makeText(this, "Create profile first!", Toast.LENGTH_SHORT).show();
         }
@@ -387,135 +610,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     }
 
-    @Override
-    public void applyUpdateContactsFields(String newContactNumber1, String name11) {
-        System.out.println("From applyUpdateContactsFields() name11 is: " + name11);
-        String newContactNumber= newContactNumber1, oldName= name11;
-        cdb.delete(oldName);
-        cdb.insertData(oldName, newContactNumber);
-        Toast.makeText(this, "Data updated successfully", Toast.LENGTH_SHORT).show();
-        recreate();
-    }
-
     private void panic() {
-
         openPanicDialog();
-     /*   AlertDialog.Builder a11= new AlertDialog.Builder(MainActivity.this);
-        a11.setTitle("Panic");
-        a11.setMessage("From panic choose appropriate option\n\n");
-        a11.setPositiveButton("Call 911", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                call_Nine_One_One();
-            }
-        });
-
-        a11.setNegativeButton("Send Location", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                requestPermission();
-                GoToLocation();
-            }
-        });
-
-        AlertDialog a1= a11.create();
-        a1.show();   */
     }
 
     private void openPanicDialog() {
         PanicDialog pd= new PanicDialog();
         pd.show(getSupportFragmentManager(), "Panic Dialog");
-    }
-
-    public void requestPermissions() {
-        if (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, REQUEST_CODE_LOCATION_PERMISSION);
-        }
-    }
-
-    private void GoToLocation() {
-        if (ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, REQUEST_CODE_LOCATION_PERMISSION);
-        } else {
-            startLocationService();
-        }
-    }
-
-    private boolean isLocationServiceRunning() {
-        ActivityManager activityManager= (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
-        if (activityManager!=null) {
-            for (ActivityManager.RunningServiceInfo service: activityManager.getRunningServices(Integer.MAX_VALUE)) {
-                if (LocationService.class.getName().equals(service.service.getClassName())) {
-                    if (service.foreground) {
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-        return false;
-    }
-
-    private void startLocationService() {
-        if (!isLocationServiceRunning()) {
-            Toast.makeText(this, "Location service started...", Toast.LENGTH_SHORT).show();
-            Intent intent= new Intent(getApplicationContext(), LocationService.class);
-            intent.setAction(Constants.ACTION_START_LOCATION_SERVICE);
-            startService(intent);
-        }
-    }
-
-    private void stopLocationService() {
-        if (isLocationServiceRunning()) {
-            Intent intent= new Intent(getApplicationContext(), LocationService.class);
-            intent.setAction(Constants.ACTION_STOP_LOCATION_SERVICE);
-            startService(intent);
-            Toast.makeText(this, "Location service stopped...", Toast.LENGTH_SHORT).show();
-        }
-    }
-
-    private void requestPermission() {
-        if (ContextCompat.checkSelfPermission(MainActivity.this,
-                Manifest.permission.SEND_SMS)
-                != PackageManager.PERMISSION_GRANTED) {
-            if (ActivityCompat.shouldShowRequestPermissionRationale(MainActivity.this,
-                    Manifest.permission.SEND_SMS)) {
-            } else {
-                ActivityCompat.requestPermissions(MainActivity.this,
-                        new String[]{Manifest.permission.SEND_SMS},
-                        PERMISSION_REQUEST_SEND_SMS);
-            }
-        }
-    }
-
-    private void call_Nine_One_One(String mobilenumber) {
-
-        if (Build.VERSION.SDK_INT < 23) {
-            phoneCall(mobileNumber);
-        }else {
-
-            if (ActivityCompat.checkSelfPermission(MainActivity.this,
-                    Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
-
-                phoneCall(mobilenumber);
-            }else {
-                final String[] PERMISSIONS_STORAGE = {Manifest.permission.CALL_PHONE};
-                //Asking request Permissions
-                ActivityCompat.requestPermissions(MainActivity.this, PERMISSIONS_STORAGE, 9);
-            }
-        }
-    }
-
-    private void phoneCall(String mobilenumber){
-        String Nine_One_one= "+91 " + mobilenumber;
-        if (ActivityCompat.checkSelfPermission(MainActivity.this,
-                Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
-            Intent callIntent = new Intent(Intent.ACTION_CALL);
-            callIntent.setData(Uri.parse("tel:"+Nine_One_one));
-            startActivity(callIntent);
-        }else{
-            Toast.makeText(getApplicationContext(), "You don't assign permission.", Toast.LENGTH_SHORT).show();
-        }
     }
 
     private void displayStoredContactsAndUpload() {
@@ -529,7 +630,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             for (int i = 0, i1 = 0; (i < ContactName.size() && i1 < ContactNumber.size()); i++, i1++) {
                 cdb.insertData(ContactName.get(i), ContactNumber.get(i1));
             }
-            //  }
         }
     }
 
@@ -538,7 +638,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (checkContactPermission()) {
             pickContactIntent();
             recreate();
-            // displayStoredContactsAndUpload();
         } else {
             requestContactPermission();
         }
@@ -611,13 +710,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         if (requestCode==REQUEST_CODE_LOCATION_PERMISSION && grantResults.length > 0) {
             if (grantResults[0]== PackageManager.PERMISSION_GRANTED) {
-                startLocationService();
+              //  startLocationService();
             }
         }
 
         if (requestCode== PERMISSION_REQUEST_SEND_SMS && grantResults.length > 0) {
             if (grantResults[0]== PackageManager.PERMISSION_GRANTED) {
-                startLocationService();
+              // startLocationService();
             }
         }
 
@@ -637,7 +736,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
         if(permissionGranted){
             System.out.println("From onRequestPermissionResult() mobileNumber is: " + mobileNumber);
-            phoneCall(mobileNumber);
+          //  phoneCall(mobileNumber);
         }else {
             Toast.makeText(MainActivity.this, "You don't assign permission.", Toast.LENGTH_SHORT).show();
         }
@@ -691,6 +790,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void saveProfileData(final String name1, final String mobile1, Uri imageUri) {
         if (imageUri != null) {
+
+            imagePath= imageUri+"";
+
             final StorageReference ref = storageReference.child("Profile Pics/" + UUID.randomUUID().toString());
 
             final ProgressDialog pd = new ProgressDialog(this);
@@ -747,8 +849,74 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    @Override
+    private void requestSmsPermission() {
+        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.SEND_SMS)!= PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.RECEIVE_SMS)!= PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(MainActivity.this,new String[]{Manifest.permission.SEND_SMS, Manifest.permission.RECEIVE_SMS}, 100);
+        }
+    }
+
+
+  /*  @Override
     public void applyUpdateContactsFields(final String number1) {
+        System.out.println("From PanicDialog applyUpdateContactsFields() number1 is: " + number1);
+        mobileNumber= number1;
+
+        AlertDialog.Builder a11= new AlertDialog.Builder(MainActivity.this);
+        a11.setTitle("Panic");
+        a11.setMessage("From panic choose appropriate option\n\n");
+        a11.setPositiveButton("Call " + mobileNumber, new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+             //   call_Nine_One_One(number1);
+            }
+        });
+
+
+        a11.setNegativeButton("Send Location", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialogInterface, int i) {
+             //   requestPermission();
+              //  GoToLocation();
+            }
+        });
+
+        AlertDialog a1= a11.create();
+        a1.show();
+    }   */
+
+    @Override
+    public void applyPlaceChooserFields(String places) {
+        System.out.println("From MainActivity applylaceChooser() places: " + places);
+        Intent sendData= new Intent(MainActivity.this, NearbyPlacesOfCurrentLocation.class);
+        sendData.putExtra("place", places);
+       // startActivity(new Intent(MainActivity.this, NearbyPlacesOfCurrentLocation.class));
+        startActivity(sendData);
+    }
+
+    @Override
+    public void applyUpdateContactsFields(String number1, String text, boolean isContactUpdate) {
+        if (!isContactUpdate) {
+            System.out.println("From MainActivity applylaceChooser() places: " + number1);
+            Intent sendData = new Intent(MainActivity.this, NearbyPlacesOfCurrentLocation.class);
+            sendData.putExtra("place", number1);
+            // startActivity(new Intent(MainActivity.this, NearbyPlacesOfCurrentLocation.class));
+            startActivity(sendData);
+        }
+        if (isContactUpdate) {
+            System.out.println("From MainActivity applyUpdateContactsFields() number1 is: " + number1 + " and text is: " + text);
+            cdb.delete1(text);
+            cdb.insertData(text, number1);
+            recreate();
+        }
+    }
+
+    public void call_Nine_One_One(String number1) {
+        Intent intent = new Intent(Intent.ACTION_DIAL, Uri.fromParts("tel", number1.replace(number1, "+91 76368 03495"), null));
+        startActivity(intent);
+    }
+
+    @Override
+    public void applyPanicFields(final String number1) {
         System.out.println("From PanicDialog applyUpdateContactsFields() number1 is: " + number1);
         mobileNumber= number1;
 
@@ -762,18 +930,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
 
-     /*   a11.setNeutralButton("Stop Alarm", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                stopPlayer();
-            }
-        });   */
 
         a11.setNegativeButton("Send Location", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
-                requestPermission();
-                GoToLocation();
+                   requestPermission();
+                   GoToLocation();
+                   sendMessage(number1);
             }
         });
 
@@ -781,12 +944,136 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         a1.show();
     }
 
-    @Override
-    public void applyPlaceChooserFields(String places) {
-        System.out.println("From MainActivity applylaceChooser() places: " + places);
-        Intent sendData= new Intent(MainActivity.this, NearbyPlacesOfCurrentLocation.class);
-        sendData.putExtra("place", places);
-       // startActivity(new Intent(MainActivity.this, NearbyPlacesOfCurrentLocation.class));
-        startActivity(sendData);
+    private void sendMessage(String number1) {
+
+        System.out.println("From sendMessage() latitude is: " + latitude + "\tlongitude: " + longitude);
+
+        SQLiteDatabase db= cdb.getWritableDatabase();
+        String query = "select * from contact";
+        Cursor c1 = db.rawQuery(query, null);
+        StringBuilder sb1= new StringBuilder();
+        if (c1!= null && c1.getCount() > 0) {
+            if (c1.moveToFirst()) {
+                do {
+                    ContactsSet.add(c1.getString(0) + "\t" + c1.getString(1) + "\n\n\n\n");
+                } while (c1.moveToNext());
+            }
+        }
+
+        if (ContactsSet.size()==0) {
+            Toast.makeText(MainActivity.this, "No contacts have been saved yet", Toast.LENGTH_SHORT).show();
+        }
+
+        else {
+
+     //   ContactsSet.add("+91 76368 03495");
+      //  requestPermission();
+        for (String s : ContactsSet) {
+            SmsManager sm = SmsManager.getDefault();
+
+            IntentFilter sendIntentFilter = new IntentFilter(SMS_SEND_ACTION);
+            IntentFilter receiveIntentFilter = new IntentFilter(SMS_DELIVERY_ACTION);
+
+            PendingIntent sentPI = PendingIntent.getBroadcast(MainActivity.this, 0, new Intent(SMS_SEND_ACTION), 0);
+            PendingIntent deliveredPI = PendingIntent.getBroadcast(MainActivity.this, 0, new Intent(SMS_DELIVERY_ACTION), 0);
+
+            BroadcastReceiver messageSentReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    switch (getResultCode()) {
+                        case Activity.RESULT_OK:
+                            Toast.makeText(context, "SMS sent", Toast.LENGTH_SHORT).show();
+                            break;
+                        case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
+                            Toast.makeText(context, "Generic failure", Toast.LENGTH_SHORT).show();
+                            break;
+                        case SmsManager.RESULT_ERROR_NO_SERVICE:
+                            Toast.makeText(context, "No service", Toast.LENGTH_SHORT).show();
+                            break;
+                        case SmsManager.RESULT_ERROR_NULL_PDU:
+                            Toast.makeText(context, "Null PDU", Toast.LENGTH_SHORT).show();
+                            break;
+                        case SmsManager.RESULT_ERROR_RADIO_OFF:
+                            Toast.makeText(context, "Radio off", Toast.LENGTH_SHORT).show();
+                            break;
+                    }
+                }
+            };
+
+            try {
+
+                registerReceiver(messageSentReceiver, sendIntentFilter);
+
+                BroadcastReceiver messageReceiveReceiver = new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context arg0, Intent arg1) {
+                        switch (getResultCode()) {
+                            case Activity.RESULT_OK:
+                                Toast.makeText(MainActivity.this, "SMS Delivered", Toast.LENGTH_SHORT).show();
+                                break;
+                            case Activity.RESULT_CANCELED:
+                                Toast.makeText(MainActivity.this, "SMS Not Delivered", Toast.LENGTH_SHORT).show();
+                                break;
+                        }
+                    }
+                };
+                registerReceiver(messageReceiveReceiver, receiveIntentFilter);
+                String message1 = "Hi this is an emergency situation here with me, please come and save me. My current location is: " + String.valueOf(latitude) + " " + String.valueOf(longitude);
+                ArrayList<String> parts = sm.divideMessage(message1);
+                ArrayList<PendingIntent> sentIntents = new ArrayList<PendingIntent>();
+                ArrayList<PendingIntent> deliveryIntents = new ArrayList<PendingIntent>();
+                for (int i = 0; i < parts.size(); i++) {
+                    sentIntents.add(PendingIntent.getBroadcast(MainActivity.this, 0, new Intent(SMS_SEND_ACTION), 0));
+                    deliveryIntents.add(PendingIntent.getBroadcast(MainActivity.this, 0, new Intent(SMS_DELIVERY_ACTION), 0));
+                }
+                sm.sendMultipartTextMessage(s, null, parts, sentIntents, deliveryIntents);
+            } catch (Exception e) {
+            }
+        }
+        }
+        }
+
+
+    private void GoToLocation() {
+        getGeoCurrentLocation();
+    }
+
+    private void getGeoCurrentLocation() {
+        requestPermission();
+        Toast.makeText(MainActivity.this, "Entered in this method...", Toast.LENGTH_SHORT).show();
+        LocationRequest locationRequest = new LocationRequest();
+        locationRequest.setInterval(10000);
+        locationRequest.setFastestInterval(2000);
+        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
+        if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, PackageManager.PERMISSION_GRANTED);
+        }
+        LocationServices.getFusedLocationProviderClient(MainActivity.this)
+                .requestLocationUpdates(locationRequest, new LocationCallback() {
+                    @Override
+                    public void onLocationResult(@NonNull LocationResult locationResult) {
+                        super.onLocationResult(locationResult);
+                        LocationServices.getFusedLocationProviderClient(MainActivity.this)
+                                .removeLocationUpdates(this);
+
+                        if (locationResult != null && locationResult.getLocations().size() > 0) {
+                            int latestLocationIndex = locationResult.getLocations().size() - 1;
+
+                            latitude = locationResult.getLocations().get(latestLocationIndex).getLatitude();
+
+                            longitude = locationResult.getLocations().get(latestLocationIndex).getLongitude();
+
+                            System.out.println("Latitude is: " + latitude);
+                            System.out.println("Longitude is: " + longitude);
+                            Toast.makeText(MainActivity.this, "Latitude is: " + latitude + " and Longitude is: " + longitude, Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                }, Looper.getMainLooper());
+    }
+
+    private void requestPermission() {
+        if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_FINE_LOCATION)!= PackageManager.PERMISSION_GRANTED || ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.ACCESS_COARSE_LOCATION)!= PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(MainActivity.this,new String[]{Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION}, 100);
+        }
     }
 }

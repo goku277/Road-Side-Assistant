@@ -1,41 +1,41 @@
 {
   "project_info": {
-    "project_number": "Your project_number",
-    "project_id": "Your project_id",
-    "storage_bucket": "Your storage_bucket"
+    "project_number": "588127340782",
+    "project_id": "myroadsideassistant-635ff",
+    "storage_bucket": "myroadsideassistant-635ff.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "Your mobilesdk_app_id",
+        "mobilesdk_app_id": "1:588127340782:android:3d8aa1ab8e597624448bff",
         "android_client_info": {
-          "package_name": "Your package_name"
+          "package_name": "com.charles.myroadsideassistant"
         }
       },
       "oauth_client": [
         {
-          "client_id": "Your client_id",
+          "client_id": "588127340782-l420hjht8muhvj9im4ml63pola4ms316.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "Your package_name",
-            "certificate_hash": "Your certificate_hash"
+            "package_name": "com.charles.myroadsideassistant",
+            "certificate_hash": "a96b51b131b1063cba67867ff7931d19e48f8260"
           }
         },
         {
-          "client_id": "Your client_id",
+          "client_id": "588127340782-5vumk0t2kkj5tguadadds9va3mlr88d2.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "Your current_key"
+          "current_key": "AIzaSyBpNjjbjeL7bOTEz0U9yAs0Y70YzJ4Cjjc"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "Your client_id",
+              "client_id": "588127340782-5vumk0t2kkj5tguadadds9va3mlr88d2.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

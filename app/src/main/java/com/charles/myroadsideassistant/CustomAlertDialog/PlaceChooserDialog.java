@@ -9,6 +9,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.Button;
 import android.widget.Spinner;
 import android.widget.Toast;
 
@@ -28,12 +29,13 @@ import java.util.Map;
 public class PlaceChooserDialog extends DialogFragment {
     Spinner spin;
     Map<String, String> map1= new LinkedHashMap<>();
+    Button Ok;
     List<String> stringlist;
     ArrayAdapter<String> arrayadapter;
 
     String choose="", mobilenumber="";
 
-    ContactsUpdateDialogListener listener;
+    placechooseListener listener;
 
     @NonNull
     @Override
@@ -62,15 +64,17 @@ public class PlaceChooserDialog extends DialogFragment {
         LayoutInflater inflater = getActivity().getLayoutInflater();
         View view = inflater.inflate(R.layout.panic_layout, null);
 
+        profileDialog.setIcon(R.drawable.places_icon);
+
         profileDialog.setView(view)
-                .setTitle("Panic")
-                .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+                .setTitle("Panic");
+              /*  .setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
 
                     }
-                })
-                .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                });
+              /*  .setPositiveButton("Ok", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
                         if (!choose.equals("Select helpline number")) {
@@ -78,11 +82,23 @@ public class PlaceChooserDialog extends DialogFragment {
                         }
                         else Toast.makeText(getActivity(), "Select a helpline number at first", Toast.LENGTH_SHORT).show();
                     }
-                });
+                }); */
 
         spin= (Spinner) view.findViewById(R.id.call_helpline_id);
 
-        ArrayAdapter<String> adp = new ArrayAdapter<String> (getActivity(), android.R.layout.simple_spinner_dropdown_item,stringlist);
+        Ok= (Button) view.findViewById(R.id.ok_id);
+
+        Ok.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (!choose.equals("Select helpline number")) {
+                    listener.applyPlaceChooserFields(choose);
+                }
+                else Toast.makeText(getActivity(), "Select a helpline number at first", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        ArrayAdapter<String> adp = new ArrayAdapter<String> (getActivity(), R.layout.text,stringlist);
         // APP CURRENTLY CRASHING HERE
         spin.setAdapter(adp);
         //Set listener Called when the item is selected in spinner
@@ -112,14 +128,14 @@ public class PlaceChooserDialog extends DialogFragment {
         super.onAttach(context);
 
         try {
-            listener = (ContactsUpdateDialogListener) context;
+            listener = (placechooseListener) context;
         } catch (ClassCastException e) {
             throw new ClassCastException(context.toString() + " Must implement this Doctor_profile_Listener");
         }
         ;
     }
 
-    public interface ContactsUpdateDialogListener {
+    public interface placechooseListener {
         public void applyPlaceChooserFields(String number1);
     }
 }

@@ -64,6 +64,22 @@ public class ContactsDb extends SQLiteOpenHelper {
         db.close();
     }
 
+    public void delete1(String name1) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        try
+        {
+            db.delete("contact", "name = ?", new String[] { name1 });
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+        }
+        finally
+        {
+            db.close();
+        }
+    }
+
     @Override
     public void onCreate(SQLiteDatabase db) {
         String query = "create table contact(name text, number text);";

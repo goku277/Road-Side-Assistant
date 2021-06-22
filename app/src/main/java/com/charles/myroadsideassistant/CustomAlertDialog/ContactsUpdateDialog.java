@@ -40,9 +40,9 @@ public class ContactsUpdateDialog extends DialogFragment {
                     public void onClick(DialogInterface dialogInterface, int i) {
                         String NewContactNumber = newContactNumber.getText().toString().trim();
                         String OldName = oldName.getText().toString().trim();
-                        newContactNumber.setText("");
-                        oldName.setText("");
-                        listener.applyUpdateContactsFields(NewContactNumber, OldName);
+                      //  newContactNumber.setText("");
+                      //  oldName.setText("");
+                        listener.applyUpdateContactsFields(NewContactNumber, OldName, true);
 
                     }
                 });
@@ -65,6 +65,6 @@ public class ContactsUpdateDialog extends DialogFragment {
     }
 
     public interface ContactsUpdateDialogListener {
-        public void applyUpdateContactsFields(String number1, String name11);
+        public void applyUpdateContactsFields(String number1, String name11, boolean isContactUpdate);
     }
 }
